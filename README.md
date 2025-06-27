@@ -1,4 +1,4 @@
-# High-Contrast Tetris Clone
+# vxnquish's Tetris Game
 
 A modern, accessible Tetris-like game built with **React** and **HTML5 Canvas**, featuring a high-contrast color palette, intuitive controls, and mobile-friendly touch buttons.
 
@@ -23,11 +23,11 @@ A modern, accessible Tetris-like game built with **React** and **HTML5 Canvas**,
 | Action            | Input            |
 | ----------------- | ---------------- |
 | Move Left / Right | `←` / `→`        |
-| Rotate CCW / CW   | `z` / `x`        |
+| Rotate CCW / CW   | `Z` / `X`        |
 | Quick Drop        | `↓`              |
-| Pause / Resume    | `p`              |
+| Pause / Resume    | `P`              |
 | Restart Game      | On-screen button |
-| Score per clear   | 10 × 2ⁿ⁻¹ points |
+| Scoring system    | 10 × 2ⁿ⁻¹ points |
 
 ---
 
@@ -44,8 +44,8 @@ These instructions will get you a copy of the project up and running on your loc
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/high-contrast-tetris.git
-cd high-contrast-tetris
+git clone https://github.com/vxnquish/tetris-react.git
+cd tetris-react
 
 # Install dependencies
 npm install
@@ -78,9 +78,9 @@ The optimized files will be in the `build/` folder.
 
 ## 🛠️ Tech Stack
 
-- **Framework:** React 18
+- **Framework:** React
 - **Rendering:** HTML5 Canvas API
-- **Language:** JavaScript (ES6+)
+- **Language:** JavaScript
 - **Styling:** Inline CSS & custom pixel font ("Pixelify Sans")
 
 ---
@@ -91,8 +91,8 @@ The optimized files will be in the `build/` folder.
 src/
 ├── components/
 │   └── Board.jsx      # Main game logic & rendering
-├── index.js           # React entry point
-└── styles.css         # Global styles (App, buttons, layout)
+├── main.jsx           # React entry point
+└── index.css          # Global styles (App, buttons, layout)
 ```
 
 ---
@@ -105,4 +105,4 @@ Feel free to open issues or submit pull requests to add features, fix bugs, or i
 
 ## 📜 License
 
-This project is licensed under the [MIT License](LICENSE).
+-
