@@ -57,6 +57,7 @@ const PIECES = {
 function createMatrix(w, h) {
   return Array.from({ length: h }, () => Array(w).fill(null));
 }
+
 function drawMatrix(ctx, matrix, offset, overrideColor) {
   matrix.forEach((row, y) =>
     row.forEach((v, x) => {
@@ -72,9 +73,10 @@ function drawMatrix(ctx, matrix, offset, overrideColor) {
     })
   );
 }
+
 function collide(arena, { matrix, pos }) {
-  for (let y = 0; y < matrix.length; y++)
-    for (let x = 0; x < matrix[y].length; x++)
+  for (let y = 0; y < matrix.length; y++) {
+    for (let x = 0; x < matrix[y].length; x++) {
       if (matrix[y][x] !== 0) {
         const ay = y + pos.y,
           ax = x + pos.x;
@@ -87,8 +89,11 @@ function collide(arena, { matrix, pos }) {
         )
           return true;
       }
+    }
+  }
   return false;
 }
+
 function merge(arena, player) {
   player.matrix.forEach((row, y) =>
     row.forEach((v, x) => {
@@ -101,25 +106,31 @@ function merge(arena, player) {
     })
   );
 }
+
 function rotate(matrix, dir) {
-  for (let y = 0; y < matrix.length; y++)
-    for (let x = 0; x < y; x++)
+  for (let y = 0; y < matrix.length; y++) {
+    for (let x = 0; x < y; x++) {
       [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-  if (dir > 0) matrix.forEach((r) => r.reverse());
+    }
+  }
+  if (dir > 0) matrix.forEach((row) => row.reverse());
   else matrix.reverse();
 }
+
 function randomPiece() {
   const types = Object.keys(PIECES);
   const t = types[(Math.random() * types.length) | 0];
   return PIECES[t].map((r) => [...r]);
 }
+
 function randomColor() {
   return HIGH_CONTRAST[(Math.random() * HIGH_CONTRAST.length) | 0];
 }
 
 export default function Board({ onGameOver }) {
-  const canvasRef = useRef(),
-    nextRef = useRef();
+  const canvasRef = useRef(null),
+    nextRef = useRef(null);
+
   const [arena] = useState(() => createMatrix(10, 20));
   const [player, setPlayer] = useState({
     pos: { x: 0, y: 0 },
@@ -134,12 +145,15 @@ export default function Board({ onGameOver }) {
   const [gameOver, setGameOver] = useState(false);
   const [paused, setPaused] = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const [confirmRestart, setConfirmRestart] = useState(false);
+
   const playerRef = useRef(player),
     pausedRef = useRef(paused),
     overRef = useRef(gameOver);
   const dropCounter = useRef(0),
     dropInterval = 1000;
 
+  // Sync refs
   useEffect(() => {
     playerRef.current = player;
   }, [player]);
@@ -150,6 +164,7 @@ export default function Board({ onGameOver }) {
     overRef.current = gameOver;
   }, [gameOver]);
 
+  // Countdown before first drop
   useEffect(() => {
     if (countdown > 0) {
       const id = setTimeout(() => setCountdown((c) => c - 1), 1000);
@@ -158,14 +173,15 @@ export default function Board({ onGameOver }) {
     playerReset();
   }, [countdown]);
 
+  // Draw next piece preview
   useEffect(() => {
     const ctx = nextRef.current.getContext("2d");
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.save();
     ctx.scale(20, 20);
-    const offX = (4 - nextPiece.matrix[0].length) / 2,
-      offY = (4 - nextPiece.matrix.length) / 2;
+    const offX = (4 - nextPiece.matrix[0].length) / 2;
+    const offY = (4 - nextPiece.matrix.length) / 2;
     drawMatrix(ctx, nextPiece.matrix, { x: offX, y: offY }, nextPiece.color);
     ctx.restore();
   }, [nextPiece]);
@@ -185,56 +201,65 @@ export default function Board({ onGameOver }) {
     });
   }
 
+  // Movement handlers
   const playerMove = (dir) => {
     if (pausedRef.current || countdown > 0) return;
-    const p = playerRef.current,
-      pos = { x: p.pos.x + dir, y: p.pos.y };
-    if (!collide(arena, { matrix: p.matrix, pos }))
+    const p = playerRef.current;
+    const pos = { x: p.pos.x + dir, y: p.pos.y };
+    if (!collide(arena, { matrix: p.matrix, pos })) {
       setPlayer((p) => ({ ...p, pos }));
+    }
   };
+
   const playerDrop = () => {
     if (pausedRef.current || countdown > 0) return;
-    const p = playerRef.current,
-      pos = { x: p.pos.x, y: p.pos.y + 1 };
-    if (!collide(arena, { matrix: p.matrix, pos }))
+    const p = playerRef.current;
+    const pos = { x: p.pos.x, y: p.pos.y + 1 };
+    if (!collide(arena, { matrix: p.matrix, pos })) {
       setPlayer((p) => ({ ...p, pos }));
-    else {
+    } else {
       merge(arena, p);
       arenaSweep();
       playerReset();
     }
   };
+
   const rotatePlayer = (dir) => {
     if (pausedRef.current || countdown > 0) return;
     const p = playerRef.current;
     const cloned = p.matrix.map((r) => [...r]);
     rotate(cloned, dir);
-    if (!collide(arena, { matrix: cloned, pos: p.pos }))
+    if (!collide(arena, { matrix: cloned, pos: p.pos })) {
       setPlayer((p) => ({ ...p, matrix: cloned }));
+    }
   };
 
   function arenaSweep() {
-    let count = 1;
+    let rowCount = 1;
     outer: for (let y = arena.length - 1; y >= 0; y--) {
-      for (let x = 0; x < arena[y].length; x++)
+      for (let x = 0; x < arena[y].length; x++) {
         if (arena[y][x] == null) continue outer;
+      }
       arena.splice(y, 1);
-      arena.unshift(Array(10).fill(null));
-      setPlayer((p) => ({ ...p, score: p.score + count * 10 }));
-      count *= 2;
+      arena.unshift(new Array(10).fill(null));
+      setPlayer((p) => ({ ...p, score: p.score + rowCount * 10 }));
+      rowCount *= 2;
       y++;
     }
   }
 
+  // Main render & game loop
   useEffect(() => {
-    const canvas = canvasRef.current,
-      ctx = canvas.getContext("2d");
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
     let lastTime = 0;
+
     function update(time = 0) {
-      const over = overRef.current,
-        paused = pausedRef.current;
+      const over = overRef.current;
+      const paused = pausedRef.current;
       const delta = time - lastTime;
       lastTime = time;
+
       if (!over && !paused && countdown === 0) {
         dropCounter.current += delta;
         if (dropCounter.current > dropInterval) {
@@ -242,6 +267,8 @@ export default function Board({ onGameOver }) {
           dropCounter.current = 0;
         }
       }
+
+      // Clear and draw
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
@@ -254,16 +281,18 @@ export default function Board({ onGameOver }) {
         playerRef.current.color
       );
       ctx.restore();
+
+      // Overlays
       if (countdown > 0) renderOverlay(ctx, String(countdown));
       else if (paused) renderOverlay(ctx, "Paused");
       else if (over) renderOverlay(ctx, "Game Over!");
+
       requestAnimationFrame(update);
     }
+
     function keyHandler(e) {
-      if (
-        ["ArrowLeft", "ArrowRight", "ArrowDown", "z", "x", "p"].includes(e.key)
-      )
-        e.preventDefault();
+      const keys = ["ArrowLeft", "ArrowRight", "ArrowDown", "z", "x", "p"];
+      if (keys.includes(e.key)) e.preventDefault();
       if (overRef.current) return;
       switch (e.key) {
         case "ArrowLeft":
@@ -286,6 +315,7 @@ export default function Board({ onGameOver }) {
           break;
       }
     }
+
     window.addEventListener("keydown", keyHandler);
     requestAnimationFrame(update);
     return () => window.removeEventListener("keydown", keyHandler);
@@ -304,12 +334,86 @@ export default function Board({ onGameOver }) {
     ctx.fillText(text, (ctx.canvas.width - m.width) / 2, ctx.canvas.height / 2);
   }
 
+  // Confirm restart overlay
+  const renderConfirm = () => (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0,0,0,0.8)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10,
+      }}
+    >
+      <div
+        style={{
+          background: "#222",
+          padding: 20,
+          border: "2px solid #555",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 12, // space between items
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            color: "#fff",
+            fontFamily: "Pixelify Sans",
+            textAlign: "center",
+          }}
+        >
+          Are you sure you want to restart?
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            width: 100,
+            padding: 6,
+            background: "#333",
+            border: "1px solid #555",
+            color: "#fff",
+            fontFamily: "Pixelify Sans",
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          Yes
+        </button>
+        <button
+          onClick={() => {
+            setConfirmRestart(false);
+            setPaused(false);
+          }}
+          style={{
+            width: 100,
+            padding: 6,
+            background: "#333",
+            border: "1px solid #555",
+            color: "#fff",
+            fontFamily: "Pixelify Sans",
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          No
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div
       className="game-container"
       style={{ position: "relative", width: 200 }}
     >
-      {/* Rules + Pause grouped */}
+      {/* Rules + Pause/Restart panel */}
       <div
         style={{
           position: "absolute",
@@ -379,13 +483,15 @@ export default function Board({ onGameOver }) {
         >
           {paused ? "Resume" : "Pause"}
         </button>
-        {/* Quick Restart Button */}
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            setConfirmRestart(true);
+            setPaused(true);
+          }}
           style={{
             width: "100%",
             padding: 6,
-            background: "#444",
+            background: "#333",
             border: "1px solid #555",
             color: "#fff",
             fontSize: 14,
@@ -471,6 +577,8 @@ export default function Board({ onGameOver }) {
           </button>
         ))}
       </div>
+
+      {confirmRestart && renderConfirm()}
     </div>
   );
 }
