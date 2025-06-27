@@ -1,7 +1,6 @@
 // src/components/Board.jsx
 import React, { useRef, useEffect, useState } from "react";
 
-// Default palette fallback (optional)
 const DEFAULT_COLORS = [
   null,
   "#FF0D72",
@@ -13,7 +12,6 @@ const DEFAULT_COLORS = [
   "#3877FF",
 ];
 
-// Piece definitions (0 = empty)
 const PIECES = {
   T: [
     [0, 0, 0],
@@ -86,9 +84,8 @@ function collide(arena, { matrix, pos }) {
           ax < 0 ||
           ax >= arena[0].length ||
           arena[ay][ax] != null
-        ) {
+        )
           return true;
-        }
       }
     }
   }
@@ -115,8 +112,7 @@ function rotate(matrix, dir) {
       [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
     }
   }
-  if (dir > 0) matrix.forEach((row) => row.reverse());
-  else matrix.reverse();
+  dir > 0 ? matrix.forEach((row) => row.reverse()) : matrix.reverse();
 }
 
 function randomPiece() {
@@ -152,20 +148,18 @@ export default function Board({ onGameOver }) {
   useEffect(() => {
     gameOverRef.current = gameOver;
   }, [gameOver]);
-
   useEffect(() => {
     if (gameOver && onGameOver) setTimeout(onGameOver, 2000);
   }, [gameOver, onGameOver]);
 
-  function playerMove(dir) {
+  const playerMove = (dir) => {
     const p = playerRef.current;
     const pos = { x: p.pos.x + dir, y: p.pos.y };
-    if (!collide(arena, { matrix: p.matrix, pos })) {
+    if (!collide(arena, { matrix: p.matrix, pos }))
       setPlayer((prev) => ({ ...prev, pos }));
-    }
-  }
+  };
 
-  function playerDrop() {
+  const playerDrop = () => {
     const p = playerRef.current;
     const pos = { x: p.pos.x, y: p.pos.y + 1 };
     if (!collide(arena, { matrix: p.matrix, pos })) {
@@ -175,18 +169,18 @@ export default function Board({ onGameOver }) {
       arenaSweep();
       playerReset();
     }
-  }
+  };
 
-  function rotatePlayer(dir) {
+  const rotatePlayer = (dir) => {
     const p = playerRef.current;
     const cloned = p.matrix.map((row) => [...row]);
     rotate(cloned, dir);
     if (!collide(arena, { matrix: cloned, pos: p.pos })) {
       setPlayer((prev) => ({ ...prev, matrix: cloned }));
     }
-  }
+  };
 
-  function arenaSweep() {
+  const arenaSweep = () => {
     let rowCount = 1;
     outer: for (let y = arena.length - 1; y >= 0; --y) {
       for (let x = 0; x < arena[y].length; ++x) {
@@ -198,31 +192,29 @@ export default function Board({ onGameOver }) {
       rowCount *= 2;
       y++;
     }
-  }
+  };
 
-  function playerReset() {
+  const playerReset = () => {
     const matrix = randomPiece();
     const color = randomColor();
     const x = ((arena[0].length - matrix[0].length) / 2) | 0;
     const spawn = { matrix, pos: { x, y: 0 } };
-    if (collide(arena, spawn)) {
-      setGameOver(true);
-    } else {
+    if (collide(arena, spawn)) setGameOver(true);
+    else
       setPlayer({
         pos: spawn.pos,
         matrix,
         color,
         score: playerRef.current.score,
       });
-    }
-  }
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     let lastTime = 0;
 
-    function update(time = 0) {
+    const update = (time = 0) => {
       const over = gameOverRef.current;
       const delta = time - lastTime;
       lastTime = time;
@@ -258,9 +250,9 @@ export default function Board({ onGameOver }) {
         const y = canvas.height / 2;
         ctx.fillText(text, x, y);
       }
-    }
+    };
 
-    function keyHandler(e) {
+    const keyHandler = (e) => {
       if (["ArrowLeft", "ArrowRight", "ArrowDown", "z", "x"].includes(e.key))
         e.preventDefault();
       if (gameOverRef.current) return;
@@ -281,7 +273,7 @@ export default function Board({ onGameOver }) {
           rotatePlayer(1);
           break;
       }
-    }
+    };
 
     window.addEventListener("keydown", keyHandler);
     playerReset();
@@ -295,33 +287,11 @@ export default function Board({ onGameOver }) {
       <div className="score">Score: {player.score}</div>
       <div className="controls">Controls: ←/→ move • ↓ drop • Z/X rotate</div>
       <div className="touch-controls">
-        <button
-          onClick={() => playerMove(-1)}
-          onTouchStart={() => playerMove(-1)}
-        >
-          ←
-        </button>
-        <button
-          onClick={() => rotatePlayer(-1)}
-          onTouchStart={() => rotatePlayer(-1)}
-        >
-          ⟲
-        </button>
-        <button onClick={() => playerDrop()} onTouchStart={() => playerDrop()}>
-          ↓
-        </button>
-        <button
-          onClick={() => rotatePlayer(1)}
-          onTouchStart={() => rotatePlayer(1)}
-        >
-          ⟳
-        </button>
-        <button
-          onClick={() => playerMove(1)}
-          onTouchStart={() => playerMove(1)}
-        >
-          →
-        </button>
+        <button onPointerDown={() => playerMove(-1)}>←</button>
+        <button onPointerDown={() => rotatePlayer(-1)}>⟲</button>
+        <button onPointerDown={() => playerDrop()}>↓</button>
+        <button onPointerDown={() => rotatePlayer(1)}>⟳</button>
+        <button onPointerDown={() => playerMove(1)}>→</button>
       </div>
     </div>
   );
