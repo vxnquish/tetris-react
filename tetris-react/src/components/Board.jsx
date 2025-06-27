@@ -525,7 +525,7 @@ export default function Board({ onGameOver }) {
       <div
         style={{
           position: "absolute",
-          top: 400,
+          top: 410,
           left: 0,
           right: 0,
           textAlign: "center",
