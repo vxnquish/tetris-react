@@ -1,21 +1,22 @@
-import React from "react";
+// src/App.jsx
+import React, { useState } from "react";
 import Board from "./components/Board";
-import NextPiece from "./components/NextPiece";
-import Score from "./components/Score";
-import Controls from "./components/Controls";
-import "./index.css";
 
 export default function App() {
+  const [playing, setPlaying] = useState(false);
+
   return (
-    <div className="app">
-      <div className="game-area">
-        <Board />
-        <div className="sidebar">
-          <Score />
-          <NextPiece />
-          <Controls />
+    <div className="App">
+      {playing ? (
+        <Board onGameOver={() => setPlaying(false)} />
+      ) : (
+        <div className="home-container">
+          <h1>Tetris Game</h1>
+          <button className="play-button" onClick={() => setPlaying(true)}>
+            Play Game
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

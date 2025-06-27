@@ -1,24 +1,77 @@
-.app {
+/* src/index.css */
+
+/* 1. Load Pixelify Sans from Google */
+@import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans&display=swap");
+
+/* 2. Reset & box-sizing */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 3. Make root fill the viewport */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* 4. Base body styles & global font */
+body {
   display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: flex-start;
-  min-height: 100vh;
   background: #111;
   color: #fff;
+  /* apply Pixelify Sans globally */
+  font-family: "Pixelify Sans", sans-serif;
 }
 
-.game-area {
-  display: flex;
+/* 5. Ensure your main app wrapper also uses the pixel font */
+.App,
+.home-container {
+  font-family: "Pixelify Sans", sans-serif;
+  text-align: center;
 }
 
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  margin-left: 1rem;
-  gap: 1rem;
-}
-
-canvas {
-  background: #000;
+/* 6. Style the Play button */
+.play-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #222;
   border: 2px solid #555;
+  color: #fff;
+  font-family: "Pixelify Sans", sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.play-button:hover {
+  background: #333;
+}
+
+/* 7. Canvas styling + pixelated rendering */
+canvas {
+  display: block;
+  border: 2px solid #555;
+  image-rendering: pixelated;
+  /* inherit the font so ctx.fillText can use it */
+  font-family: "Pixelify Sans", sans-serif;
+}
+
+/* 8. Score & controls text below the canvas */
+.score,
+.controls {
+  font-family: "Pixelify Sans", sans-serif;
+  margin-top: 0.5rem;
+}
+
+/* If you use explicit classes in your JSX: */
+.score {
+  color: #fff;
+}
+.controls {
+  color: #aaa;
+  font-size: 0.8rem;
 }

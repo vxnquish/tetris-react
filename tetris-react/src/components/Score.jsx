@@ -1,3 +1,4 @@
+// src/components/Score.jsx
 import React from "react";
 
 export default function Score({ score = 0 }) {
