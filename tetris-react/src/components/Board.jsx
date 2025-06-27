@@ -1,7 +1,8 @@
 // src/components/Board.jsx
 import React, { useRef, useEffect, useState } from "react";
 
-export const COLORS = [
+// Default palette fallback (optional)
+const DEFAULT_COLORS = [
   null,
   "#FF0D72",
   "#0DC2FF",
@@ -12,6 +13,7 @@ export const COLORS = [
   "#3877FF",
 ];
 
+// Piece definitions (0 = empty)
 const PIECES = {
   T: [
     [0, 0, 0],
@@ -52,15 +54,20 @@ const PIECES = {
 
 function createMatrix(w, h) {
   const matrix = [];
-  while (h--) matrix.push(new Array(w).fill(0));
+  while (h--) matrix.push(new Array(w).fill(null));
   return matrix;
 }
 
-function drawMatrix(ctx, matrix, offset) {
+function drawMatrix(ctx, matrix, offset, colorOverride) {
   matrix.forEach((row, y) => {
     row.forEach((value, x) => {
-      if (value !== 0) {
-        ctx.fillStyle = COLORS[value];
+      if (value !== 0 && value != null) {
+        const color = colorOverride
+          ? colorOverride
+          : typeof value === "string"
+          ? value
+          : DEFAULT_COLORS[value] || "#888";
+        ctx.fillStyle = color;
         ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
       }
     });
@@ -70,11 +77,18 @@ function drawMatrix(ctx, matrix, offset) {
 function collide(arena, { matrix, pos }) {
   for (let y = 0; y < matrix.length; ++y) {
     for (let x = 0; x < matrix[y].length; ++x) {
-      if (
-        matrix[y][x] !== 0 &&
-        (arena[y + pos.y] && arena[y + pos.y][x + pos.x]) !== 0
-      ) {
-        return true;
+      if (matrix[y][x] !== 0) {
+        const ay = y + pos.y;
+        const ax = x + pos.x;
+        if (
+          ay < 0 ||
+          ay >= arena.length ||
+          ax < 0 ||
+          ax >= arena[0].length ||
+          arena[ay][ax] != null
+        ) {
+          return true;
+        }
       }
     }
   }
@@ -88,7 +102,7 @@ function merge(arena, player) {
         const ay = y + player.pos.y;
         const ax = x + player.pos.x;
         if (ay >= 0 && ay < arena.length && ax >= 0 && ax < arena[0].length) {
-          arena[ay][ax] = value;
+          arena[ay][ax] = player.color;
         }
       }
     });
@@ -106,19 +120,25 @@ function rotate(matrix, dir) {
 }
 
 function randomPiece() {
-  const keys = Object.keys(PIECES);
-  return PIECES[keys[(Math.random() * keys.length) | 0]];
+  const types = Object.keys(PIECES);
+  return PIECES[types[(Math.random() * types.length) | 0]];
 }
 
-// Accepts an onGameOver callback to return to start
+function randomColor() {
+  return `#${Math.floor(Math.random() * 0xffffff)
+    .toString(16)
+    .padStart(6, "0")}`;
+}
+
 export default function Board({ onGameOver }) {
   const canvasRef = useRef(null);
   const [arena] = useState(() => createMatrix(10, 20));
-  const [player, setPlayer] = useState({
+  const [player, setPlayer] = useState(() => ({
     pos: { x: 0, y: 0 },
     matrix: randomPiece(),
+    color: randomColor(),
     score: 0,
-  });
+  }));
   const [gameOver, setGameOver] = useState(false);
 
   const playerRef = useRef(player);
@@ -133,12 +153,69 @@ export default function Board({ onGameOver }) {
     gameOverRef.current = gameOver;
   }, [gameOver]);
 
-  // Notify parent when gameOver flips, after 2s
   useEffect(() => {
-    if (gameOver && onGameOver) {
-      setTimeout(() => onGameOver(), 2000);
-    }
+    if (gameOver && onGameOver) setTimeout(onGameOver, 2000);
   }, [gameOver, onGameOver]);
+
+  function playerMove(dir) {
+    const p = playerRef.current;
+    const pos = { x: p.pos.x + dir, y: p.pos.y };
+    if (!collide(arena, { matrix: p.matrix, pos })) {
+      setPlayer((prev) => ({ ...prev, pos }));
+    }
+  }
+
+  function playerDrop() {
+    const p = playerRef.current;
+    const pos = { x: p.pos.x, y: p.pos.y + 1 };
+    if (!collide(arena, { matrix: p.matrix, pos })) {
+      setPlayer((prev) => ({ ...prev, pos }));
+    } else {
+      merge(arena, p);
+      arenaSweep();
+      playerReset();
+    }
+  }
+
+  function rotatePlayer(dir) {
+    const p = playerRef.current;
+    const cloned = p.matrix.map((row) => [...row]);
+    rotate(cloned, dir);
+    if (!collide(arena, { matrix: cloned, pos: p.pos })) {
+      setPlayer((prev) => ({ ...prev, matrix: cloned }));
+    }
+  }
+
+  function arenaSweep() {
+    let rowCount = 1;
+    outer: for (let y = arena.length - 1; y >= 0; --y) {
+      for (let x = 0; x < arena[y].length; ++x) {
+        if (arena[y][x] == null) continue outer;
+      }
+      const row = arena.splice(y, 1)[0].fill(null);
+      arena.unshift(row);
+      setPlayer((prev) => ({ ...prev, score: prev.score + rowCount * 10 }));
+      rowCount *= 2;
+      y++;
+    }
+  }
+
+  function playerReset() {
+    const matrix = randomPiece();
+    const color = randomColor();
+    const x = ((arena[0].length - matrix[0].length) / 2) | 0;
+    const spawn = { matrix, pos: { x, y: 0 } };
+    if (collide(arena, spawn)) {
+      setGameOver(true);
+    } else {
+      setPlayer({
+        pos: spawn.pos,
+        matrix,
+        color,
+        score: playerRef.current.score,
+      });
+    }
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -146,11 +223,10 @@ export default function Board({ onGameOver }) {
     let lastTime = 0;
 
     function update(time = 0) {
-      const isOver = gameOverRef.current;
+      const over = gameOverRef.current;
       const delta = time - lastTime;
       lastTime = time;
-
-      if (!isOver) {
+      if (!over) {
         dropCounter.current += delta;
         if (dropCounter.current > dropInterval) {
           playerDrop();
@@ -159,84 +235,32 @@ export default function Board({ onGameOver }) {
         requestAnimationFrame(update);
       }
 
-      // Clear full canvas in pixel-space
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw arena + piece in block-space
       ctx.save();
       ctx.scale(20, 20);
       drawMatrix(ctx, arena, { x: 0, y: 0 });
-      drawMatrix(ctx, playerRef.current.matrix, playerRef.current.pos);
+      drawMatrix(
+        ctx,
+        playerRef.current.matrix,
+        playerRef.current.pos,
+        playerRef.current.color
+      );
       ctx.restore();
 
-      // Draw centered Game Over text
-      if (isOver) {
+      if (over) {
         const text = "Game Over!";
         ctx.font = "20px 'Pixelify Sans'";
         ctx.fillStyle = "white";
-        const metrics = ctx.measureText(text);
-        const x = (canvas.width - metrics.width) / 2;
+        const m = ctx.measureText(text);
+        const x = (canvas.width - m.width) / 2;
         const y = canvas.height / 2;
         ctx.fillText(text, x, y);
       }
     }
 
-    function playerDrop() {
-      const p = playerRef.current;
-      const next = { x: p.pos.x, y: p.pos.y + 1 };
-      if (!collide(arena, { matrix: p.matrix, pos: next })) {
-        setPlayer((prev) => ({ ...prev, pos: next }));
-      } else {
-        merge(arena, p);
-        arenaSweep();
-        playerReset();
-      }
-    }
-
-    function arenaSweep() {
-      let rowCount = 1;
-      outer: for (let y = arena.length - 1; y >= 0; --y) {
-        for (let x = 0; x < arena[y].length; ++x) {
-          if (arena[y][x] === 0) continue outer;
-        }
-        const row = arena.splice(y, 1)[0].fill(0);
-        arena.unshift(row);
-        setPlayer((prev) => ({ ...prev, score: prev.score + rowCount * 10 }));
-        rowCount *= 2;
-        y++;
-      }
-    }
-
-    function playerReset() {
-      const matrix = randomPiece();
-      const x = ((arena[0].length - matrix[0].length) / 2) | 0;
-      const spawn = { matrix, pos: { x, y: 0 } };
-      if (collide(arena, spawn)) {
-        setGameOver(true);
-      } else {
-        setPlayer({ pos: spawn.pos, matrix, score: playerRef.current.score });
-      }
-    }
-
-    function playerMove(dir) {
-      const p = playerRef.current;
-      const next = { x: p.pos.x + dir, y: p.pos.y };
-      if (!collide(arena, { matrix: p.matrix, pos: next })) {
-        setPlayer((prev) => ({ ...prev, pos: next }));
-      }
-    }
-
-    function rotatePlayer(dir) {
-      const p = playerRef.current;
-      const cloned = p.matrix.map((r) => [...r]);
-      rotate(cloned, dir);
-      if (!collide(arena, { matrix: cloned, pos: p.pos })) {
-        setPlayer((prev) => ({ ...prev, matrix: cloned }));
-      }
-    }
-
-    function handleKey(e) {
+    function keyHandler(e) {
       if (["ArrowLeft", "ArrowRight", "ArrowDown", "z", "x"].includes(e.key))
         e.preventDefault();
       if (gameOverRef.current) return;
@@ -259,17 +283,46 @@ export default function Board({ onGameOver }) {
       }
     }
 
-    window.addEventListener("keydown", handleKey);
+    window.addEventListener("keydown", keyHandler);
     playerReset();
     requestAnimationFrame(update);
-    return () => window.removeEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", keyHandler);
   }, [onGameOver]);
 
   return (
-    <div style={{ position: "relative", width: 10 * 20, height: 20 * 20 }}>
+    <div className="game-container">
       <canvas ref={canvasRef} width={10 * 20} height={20 * 20} />
       <div className="score">Score: {player.score}</div>
       <div className="controls">Controls: ←/→ move • ↓ drop • Z/X rotate</div>
+      <div className="touch-controls">
+        <button
+          onClick={() => playerMove(-1)}
+          onTouchStart={() => playerMove(-1)}
+        >
+          ←
+        </button>
+        <button
+          onClick={() => rotatePlayer(-1)}
+          onTouchStart={() => rotatePlayer(-1)}
+        >
+          ⟲
+        </button>
+        <button onClick={() => playerDrop()} onTouchStart={() => playerDrop()}>
+          ↓
+        </button>
+        <button
+          onClick={() => rotatePlayer(1)}
+          onTouchStart={() => rotatePlayer(1)}
+        >
+          ⟳
+        </button>
+        <button
+          onClick={() => playerMove(1)}
+          onTouchStart={() => playerMove(1)}
+        >
+          →
+        </button>
+      </div>
     </div>
   );
 }

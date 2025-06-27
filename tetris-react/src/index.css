@@ -51,27 +51,56 @@ body {
   background: #333;
 }
 
-/* 7. Canvas styling + pixelated rendering */
-canvas {
+/* 7. Game container for responsive scaling */
+.game-container {
+  width: 100%;
+  max-width: 400px; /* adjust as needed */
+  margin: 0 auto;
+}
+
+/* 8. Canvas styling + pixelated rendering */
+.game-container canvas {
   display: block;
+  width: 100%; /* scale to container width */
+  height: auto; /* preserve aspect ratio */
   border: 2px solid #555;
   image-rendering: pixelated;
   /* inherit the font so ctx.fillText can use it */
   font-family: "Pixelify Sans", sans-serif;
 }
 
-/* 8. Score & controls text below the canvas */
+/* 9. Score & controls text below the canvas */
 .score,
 .controls {
   font-family: "Pixelify Sans", sans-serif;
   margin-top: 0.5rem;
 }
-
-/* If you use explicit classes in your JSX: */
 .score {
   color: #fff;
 }
 .controls {
   color: #aaa;
   font-size: 0.8rem;
+}
+
+/* 10. Touch controls for mobile */
+.touch-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+.touch-controls button {
+  flex: 1;
+  margin: 0 0.25rem;
+  padding: 1rem;
+  background: #222;
+  border: 2px solid #555;
+  color: #fff;
+  font-family: "Pixelify Sans", sans-serif;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.touch-controls button:active {
+  background: #333;
 }
