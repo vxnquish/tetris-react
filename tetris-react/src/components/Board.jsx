@@ -329,7 +329,7 @@ export default function Board({ onGameOver }) {
             background: "#222",
             border: "2px solid #555",
             color: "#fff",
-            fontSize: 14,
+            fontSize: 12,
             lineHeight: 1.4,
             fontFamily: "Pixelify Sans",
             textAlign: "center",
@@ -372,12 +372,28 @@ export default function Board({ onGameOver }) {
             background: "#333",
             border: "1px solid #555",
             color: "#fff",
-            fontSize: 16,
+            fontSize: 14,
             fontFamily: "Pixelify Sans",
             cursor: "pointer",
           }}
         >
           {paused ? "Resume" : "Pause"}
+        </button>
+        {/* Quick Restart Button */}
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            width: "100%",
+            padding: 6,
+            background: "#444",
+            border: "1px solid #555",
+            color: "#fff",
+            fontSize: 14,
+            fontFamily: "Pixelify Sans",
+            cursor: "pointer",
+          }}
+        >
+          Restart
         </button>
       </div>
 
@@ -403,12 +419,12 @@ export default function Board({ onGameOver }) {
       <div
         style={{
           position: "absolute",
-          top: 410,
+          top: 400,
           left: 0,
           right: 0,
           textAlign: "center",
           color: "#fff",
-          fontSize: 16,
+          fontSize: 14,
           fontFamily: "Pixelify Sans",
         }}
       >

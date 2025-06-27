@@ -5,20 +5,27 @@
   align-items: center;
   justify-content: center;
   background: #111;
+  /* make the app‐wide base font larger */
+  font-size: 1.5rem;
 }
+
 .home-container {
   text-align: center;
+  /* assume this contains headings or text you want larger */
+  font-size: 1.25rem;
 }
+
 .play-button {
   margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
-  font-size: 1.25rem;
+  padding: 1rem 2rem; /* a bit more padding for balance */
+  font-size: 1.75rem; /* increase the button font */
   border: none;
   border-radius: 8px;
   background: #0dc2ff;
   color: #000;
   cursor: pointer;
 }
+
 .play-button:hover {
   background: #0ba8cc;
 }
