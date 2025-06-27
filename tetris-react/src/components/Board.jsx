@@ -151,7 +151,7 @@ export default function Board({ onGameOver }) {
     pausedRef = useRef(paused),
     overRef = useRef(gameOver);
   const dropCounter = useRef(0),
-    dropInterval = 1000;
+    dropInterval = 500; // Game Speed
 
   // Sync refs
   useEffect(() => {
